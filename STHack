@@ -50,7 +50,7 @@ elseif playerCount >= 5 then
     needTeleport = true
     delayNeeded = true
 else
-    return -- Подходящий сервер, не телепортируемся
+    needTeleport = false -- Подходящий сервер, не телепортируемся, но продолжаем
 end
 
 -- Функция телепорта
