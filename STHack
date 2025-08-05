@@ -95,10 +95,7 @@ function Teleport()
     end
 end
 
--- Старт
-if needTeleport then
     Teleport()
-end
 
 
 
