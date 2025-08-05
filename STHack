@@ -75,10 +75,10 @@ function TPReturner()
 
                 -- ⏳ Добавляем паузу ТОЛЬКО если это приватный или заполненный сервер
                 if delayNeeded then
-                    task.wait(5)
+                    task.wait(0.1)
                 end
             end)
-            task.wait(4)
+            task.wait(0.1)
         end
     end
 end
