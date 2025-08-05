@@ -1,3 +1,4 @@
+local teleportStarted = false -- в начало скрипта
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
@@ -95,7 +96,26 @@ function Teleport()
     end
 end
 
+if needTeleport then
     task.spawn(Teleport)
+end
+
+-- внутри pcall в TPReturner():
+pcall(function()
+    TeleportService:TeleportToPlaceInstance(PlaceID, ID, LocalPlayer)
+    teleportStarted = true
+    if delayNeeded then
+        task.wait(0.1)
+    end
+end)
+
+-- и перед второй частью GUI:
+if teleportStarted then return end -- если телепорт сработал — не продолжаем
+
+-- запуск телепорта только если нужно:
+if needTeleport then
+    task.spawn(Teleport)
+end
 
 
 
