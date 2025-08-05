@@ -95,7 +95,7 @@ function Teleport()
     end
 end
 
-    task.spawn(Teleport())
+    task.spawn(Teleport)
 
 
 
