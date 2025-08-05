@@ -99,6 +99,7 @@ end
 
 if needTeleport then
     task.spawn(Teleport)
+    task.wait(9999)
 end
 
 
