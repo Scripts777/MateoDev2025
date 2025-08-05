@@ -8,7 +8,7 @@ local AllIDs = {}
 local foundAnything = ""
 local actualHour = os.date("!*t").hour
 
--- GUI функция
+-- GUI предупреждение
 local function createWarningGUI(text)
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "ServerWarningGUI"
@@ -35,19 +35,24 @@ local function createWarningGUI(text)
     label.Parent = frame
 end
 
--- Проверка текущего количества игроков
+-- Проверка количества игроков
 local playerCount = #Players:GetPlayers()
+local needTeleport = false
+local delayNeeded = false
 
--- Условие для запуска телепорта
 if playerCount <= 2 then
     createWarningGUI("⚠️ Вы находитесь на приватном сервере.\nПереход на подходящий сервер...")
+    needTeleport = true
+    delayNeeded = true
 elseif playerCount >= 5 then
     createWarningGUI("⚠️ Вы находитесь в заполненном сервере.\nПереход на подходящий сервер...")
+    needTeleport = true
+    delayNeeded = true
 else
     return -- Подходящий сервер, не телепортируемся
 end
 
--- Функция поиска и телепортации
+-- Функция телепорта
 function TPReturner()
     local Site
     if foundAnything == "" then
@@ -67,14 +72,18 @@ function TPReturner()
             task.wait()
             pcall(function()
                 TeleportService:TeleportToPlaceInstance(PlaceID, ID, LocalPlayer)
-                task.wait(9999)
+
+                -- ⏳ Добавляем паузу ТОЛЬКО если это приватный или заполненный сервер
+                if delayNeeded then
+                    task.wait(5)
+                end
             end)
             task.wait(4)
         end
     end
 end
 
--- Основная функция запуска
+-- Цикл запуска
 function Teleport()
     while task.wait() do
         pcall(function()
@@ -86,8 +95,11 @@ function Teleport()
     end
 end
 
--- Запуск телепортации
-Teleport()
+-- Старт
+if needTeleport then
+    Teleport()
+end
+
 
 
 -- Список возможных ссылок
