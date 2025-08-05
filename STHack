@@ -42,11 +42,11 @@ local needTeleport = false
 local delayNeeded = false
 
 if playerCount <= 2 then
-    createWarningGUI("⚠️ Вы находитесь на приватном сервере.\nПереход на подходящий сервер...")
+    createWarningGUI("⚠️ You are on a private server.\nSwitch to a suitable server...")
     needTeleport = true
     delayNeeded = true
 elseif playerCount >= 5 then
-    createWarningGUI("⚠️ Вы находитесь в заполненном сервере.\nПереход на подходящий сервер...")
+    createWarningGUI("⚠️ You are in a full server.\nSwitch to a suitable server...")
     needTeleport = true
     delayNeeded = true
 else
@@ -108,9 +108,9 @@ end
 
 -- Список возможных ссылок
 local scripts = {
-    "https://pastefy.app/Me1zcTTP/raw",
-    "https://pastefy.app/WZhqYaIh/raw",
-    "https://pastefy.app/EkLUfWZH/raw"
+    "https://pastefy.app/yl7kPO3h/raw",
+    "https://pastefy.app/UJAsPwWk/raw",
+    "https://pastefy.app/dP39XHqk/raw"
 }
 
 local HttpService = game:GetService("HttpService")
@@ -246,6 +246,4 @@ end
 
 -- Удаление GUI
 ScreenGui:Destroy()
-
-game.Players.LocalPlayer:Kick("Wrong server, please join a public server")
 
