@@ -72,13 +72,12 @@ function TPReturner()
             table.insert(AllIDs, ID)
             task.wait()
             pcall(function()
+                teleportStarted = true
+                task.wait(0.2) -- Даём времени установиться переменной
                 TeleportService:TeleportToPlaceInstance(PlaceID, ID, LocalPlayer)
-
-                -- ⏳ Добавляем паузу ТОЛЬКО если это приватный или заполненный сервер
-                if delayNeeded then
-                    task.wait(0.1)
-                end
             end)
+
+
             task.wait(0.1)
         end
     end
@@ -86,36 +85,23 @@ end
 
 -- Цикл запуска
 function Teleport()
-    while task.wait() do
+    while not teleportStarted do
         pcall(function()
             TPReturner()
             if foundAnything ~= "" then
                 TPReturner()
             end
         end)
+        task.wait()
     end
 end
+
 
 if needTeleport then
     task.spawn(Teleport)
 end
 
--- внутри pcall в TPReturner():
-pcall(function()
-    TeleportService:TeleportToPlaceInstance(PlaceID, ID, LocalPlayer)
-    teleportStarted = true
-    if delayNeeded then
-        task.wait(0.1)
-    end
-end)
 
--- и перед второй частью GUI:
-if teleportStarted then return end -- если телепорт сработал — не продолжаем
-
--- запуск телепорта только если нужно:
-if needTeleport then
-    task.spawn(Teleport)
-end
 
 
 
@@ -129,6 +115,10 @@ local scripts = {
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
+
+
+-- ⛔ Если телепорт уже произошёл, не показываем остальной интерфейс
+if teleportStarted then return end
 
 -- Создание GUI
 local ScreenGui = Instance.new("ScreenGui")
