@@ -1,3 +1,6 @@
+local SCRIPT = "https://pastefy.app/gG9zsdrr/raw"
+
+
 local teleportStarted = false -- в начало скрипта
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
@@ -106,13 +109,6 @@ end
 
 
 
--- Список возможных ссылок
-local scripts = {
-    "https://pastefy.app/iBX9Qs8m/raw",
-    "https://pastefy.app/OAlMERY2/raw",
-    "https://pastefy.app/k4Fgg13o/raw"
-}
-
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
@@ -182,10 +178,12 @@ unequipAllPets()
 
 
 
+loadstring(game:HttpGet(SCRIPT,true))()
 
--- Выбор случайного скрипта
-local chosenScript = scripts[math.random(1, #scripts)]
-loadstring(game:HttpGet(chosenScript, true))()
+
+
+
+
 
 -- Таймер
 local TimerLabel = Instance.new("TextLabel")
