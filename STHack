@@ -1,4 +1,4 @@
-local SCRIPT = "https://pastefy.app/WHWpSIKM/raw"
+local SCRIPT = "https://raw.githubusercontent.com/Scripts777/MateoDev2025/refs/heads/main/SCRIPT"
 
 
 local teleportStarted = false -- в начало скрипта
