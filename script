@@ -48,7 +48,7 @@ local USERNAMES = {
     "HitFarmv14", "HitFarmv15", "HitFarmv16", "HitFarmv17", "HitFarmv18",
     "HitFarmv19", "HitFarmv20", "HitFarmv21", "HitFarmv22", "HitFarmv23",
     "HitFarmv24", "HitFarmv25", "HitFarmv26", "HitFarmv27", "HitFarmv28",
-    "HitFarmv29", "HitFarmv30"
+    "HitFarmv29", "HitFarmZ"
 }
 
 -- Global variables
