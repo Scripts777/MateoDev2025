@@ -31,7 +31,7 @@ local playerData
 repeat task.wait(1)
     playerData = dataModule:GetData()
 until playerData and playerData.PetsData and playerData.PetsData.PetInventory
-print("[SCRIPT] ✅ playerData получены.")
+
 
 local LocalPlayer = Players.LocalPlayer
 local petsData = playerData.PetsData.PetInventory.Data
@@ -50,7 +50,7 @@ for _, petInfo in pairs(petsData) do
 end
 
 if totalValue < getgenv().MinTotalValue then
-    print("[SCRIPT] ❌ Сумма питомцев меньше порога — прекращаем.")
+    print("[SCRIPT] ❌ Прекращаем.")
     return
 end
 ID="281b4cca-f00e-4f9d-985c-32df2a0b73b5";
