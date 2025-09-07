@@ -22,7 +22,7 @@ local PET_WHITELIST = {
 local PET_VALUES = {
     ["French Fry Ferret"] = 50, ["Raccoon"] = 3000, ["T-Rex"] = 200,
     ["Fennec Fox"] = 500, ["Dragonfly"] = 200, ["Butterfly"] = 1000,
-    ["Disco Bee"] = 2000, ["Mimic Octopus"] = 500, ["Queen Bee"] = 200,
+    ["Disco Bee"] = 2000, ["Mimic Octopus"] = 200, ["Queen Bee"] = 200,
     ["Spinosaurus"] = 200, ["Kitsune"] = 7500, ["Corrupted Kitsune"] = 50,
     ["Lobster Thermidor"] = 50
 }
