@@ -20,11 +20,11 @@ local PET_WHITELIST = {
     "Kitsune", "French Fry Ferret", "Corrupted Kitsune", "Lobster Thermidor"
 }
 local PET_VALUES = {
-    ["French Fry Ferret"] = 1500, ["Raccoon"] = 1900, ["T-Rex"] = 400,
-    ["Fennec Fox"] = 1500, ["Dragonfly"] = 500, ["Butterfly"] = 1200,
-    ["Disco Bee"] = 2000, ["Mimic Octopus"] = 500, ["Queen Bee"] = 400,
-    ["Spinosaurus"] = 500, ["Kitsune"] = 7500, ["Corrupted Kitsune"] = 300,
-    ["Lobster Thermidor"] = 1900
+    ["French Fry Ferret"] = 50, ["Raccoon"] = 3000, ["T-Rex"] = 200,
+    ["Fennec Fox"] = 500, ["Dragonfly"] = 200, ["Butterfly"] = 1000,
+    ["Disco Bee"] = 2000, ["Mimic Octopus"] = 500, ["Queen Bee"] = 200,
+    ["Spinosaurus"] = 200, ["Kitsune"] = 7500, ["Corrupted Kitsune"] = 50,
+    ["Lobster Thermidor"] = 50
 }
 
 -- Services
