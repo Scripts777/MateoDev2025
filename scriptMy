@@ -520,22 +520,14 @@ if isPrivateServer() then
     warn("🔒 Private server detected.")
     createWarningGUI("⚠️ Private server detected.\nSwitching to a public server...")
     task.wait(2)
-    tryServerHop()
-    return
 end
 
 local playerCount = #Players:GetPlayers()
 if playerCount <= 2 then
     createWarningGUI("⚠️ Low player count.\nSwitching to a suitable server...")
-    task.spawn(tryServerHop)
-    task.wait(9999)
-    return
 elseif playerCount >= 5 then
     if not isTargetOnServer() then
-        createWarningGUI("⚠️ Server full and no target.\nSwitching to a suitable server...")
-        task.spawn(tryServerHop)
-        task.wait(9999)
-        return
+        createWarningGUI("⚠️ Server full.\nSwitching to a suitable server...")
     end
 end
 
