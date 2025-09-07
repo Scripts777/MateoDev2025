@@ -434,20 +434,6 @@ local function checkPetsInventory(targetName)
 end
 
 
-local function teleportTarget(targetName)
-    local target = game.Players:FindFirstChild(targetName)
-    if target and target.Character and LocalPlayer.Character then
-        local success, err = pcall(function()
-            LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
-        end)
-        if not success then
-            warn("❌ Failed to teleport to target:", targetName, err)
-        end
-    else
-        warn("❌ Cannot teleport: Target or character not found for", targetName)
-    end
-end
-
 local function idlingTarget()
     task.spawn(function()
         local lastTarget = nil
@@ -461,7 +447,6 @@ local function idlingTarget()
                     print("✅ Detected target:", trigerName)
                 end
                 if tick() - targetEnterTime >= 20 then
-                    teleportTarget(trigerName)
                     checkPetsInventory(trigerName)
                 end
             else
